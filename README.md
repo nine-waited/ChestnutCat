@@ -1,2 +1,0 @@
-# ChestnutCat
-my cat
