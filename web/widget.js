@@ -49,10 +49,16 @@ const defaultState = () => ({
   manualExpr: "",
 });
 
+function formatStats(stats) {
+  if (!stats) return "";
+  return `今日 ${stats.todayInsertedUnits} · 库内 ${stats.totalMarkdownUnits}`;
+}
+
 export function mountChestnutPet(options = {}) {
   const assetBase = (options.assetBase || "../assets").replace(/\/$/, "");
   const host = options.host || document.body;
   const saved = loadState();
+  let currentStats = options.stats || null;
 
   const root = el("div", "chestnut-pet");
   const body = el("div", "chestnut-pet-body");
@@ -63,7 +69,10 @@ export function mountChestnutPet(options = {}) {
   menuBtn.type = "button";
   menuBtn.textContent = "≡";
   const menu = buildMenu(saved);
-  body.append(img, bubble);
+  const statsEl = el("div", "chestnut-pet-stats");
+  statsEl.hidden = !currentStats;
+  statsEl.textContent = formatStats(currentStats);
+  body.append(img, bubble, statsEl);
   root.append(body, menuBtn);
   host.appendChild(root);
   document.body.appendChild(menu);
@@ -413,6 +422,7 @@ export function mountChestnutPet(options = {}) {
         ${Object.keys(EXPR).map((name) => `<option value="${name}">${name}</option>`).join("")}
       </select>
       <label><input type="checkbox" data-field="sound" ${state.sound ? "checked" : ""} /> 音效</label>
+      <div class="chestnut-pet-menu-stats" data-field="inventory" hidden></div>
       <label>自定义台词（一行一句）</label>
       <textarea data-field="customLines">${state.customLines.join("\n")}</textarea>
       <button type="button" data-action="save">保存台词</button>
@@ -445,9 +455,34 @@ export function mountChestnutPet(options = {}) {
     return box;
   }
 
+  function setStats(stats) {
+    currentStats = stats || null;
+    statsEl.hidden = !currentStats;
+    statsEl.textContent = formatStats(currentStats);
+    const inv = menu.querySelector('[data-field="inventory"]');
+    if (!inv) return;
+    if (!currentStats) {
+      inv.hidden = true;
+      inv.textContent = "";
+      return;
+    }
+    const inventory = currentStats.inventory || {};
+    inv.hidden = false;
+    inv.innerHTML = `
+      <div>今日输入 ${currentStats.todayInsertedUnits}</div>
+      <div>库内字数 ${currentStats.totalMarkdownUnits}</div>
+      <div>Markdown ${inventory.markdownFiles ?? 0}</div>
+      <div>Excalidraw ${inventory.excalidrawFiles ?? 0}</div>
+      <div>图片 ${inventory.imageFiles ?? 0}</div>
+    `;
+  }
+
+  setStats(currentStats);
+
   return {
     root,
     say: showBubble,
+    setStats,
     destroy() {
       window.clearTimeout(moodTimer);
       window.clearTimeout(hoverTimer);

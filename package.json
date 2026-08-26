@@ -5,6 +5,7 @@
   "description": "Web desktop pet of Chestnut as a ginger tabby cat-girl",
   "scripts": {
     "preview": "python -m http.server 4173",
-    "chroma": "python scripts/chroma_key.py"
+    "chroma": "python scripts/chroma_key.py",
+    "sync-editor": "powershell -File scripts/sync-to-editor.ps1"
   }
 }
