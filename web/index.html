@@ -6,7 +6,7 @@
     <title>Chestnut Cat — 板栗猫娘</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
-    <link rel="stylesheet" href="./widget.css?v=20260826c" />
+    <link rel="stylesheet" href="./widget.css?v=20260827c" />
     <style>
       html,
       body {
@@ -35,13 +35,21 @@
         <a href="https://github.com/louke6572/dsh-whale-widget-plus" style="color: #e2b07a"
           >dsh-whale-widget-plus</a
         >
-        ：点击说话，连点生气，悬停害羞，久不理会会失落，按住揉头。
+        ：点角色弹出漫画气泡，点气泡切台词，再点关闭；连点生气，悬停害羞，久不理会会失落，按住揉头。
       </p>
       <p>不要双击打开本页。在仓库根目录运行 <code>python -m http.server 4173</code>，然后打开本页。</p>
     </main>
     <script type="module">
-      import { mountChestnutPet } from "./widget.js?v=20260826c";
-      mountChestnutPet({ assetBase: "../assets", host: document.body });
+      import { mountChestnutPet } from "./widget.js?v=20260827c";
+      mountChestnutPet({
+        assetBase: "../assets",
+        host: document.body,
+        stats: {
+          todayInsertedUnits: 128,
+          totalMarkdownUnits: 4096,
+          inventory: { markdownFiles: 12, excalidrawFiles: 3, imageFiles: 8 },
+        },
+      });
     </script>
   </body>
 </html>
