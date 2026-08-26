@@ -1,5 +1,5 @@
 const STORAGE_KEY = "chestnut-pet";
-const ASSET_VER = "20260827c";
+const ASSET_VER = "20260827d";
 const BUBBLE_STYLE = {
   A: "chestnut-pet-label",
   B: "chestnut-pet-amount",
@@ -525,6 +525,22 @@ export function mountChestnutPet(options = {}) {
     }
   }
 
+  function applyScale(scale) {
+    const host = root.parentElement || document.body;
+    const hostRect =
+      host === document.body
+        ? { left: 0, top: 0 }
+        : host.getBoundingClientRect();
+    const rect = root.getBoundingClientRect();
+    const pinRight = rect.right - hostRect.left;
+    const pinBottom = rect.bottom - hostRect.top;
+    saved.scale = scale;
+    root.style.setProperty("--pet-scale", String(scale));
+    place(root, pinRight - root.offsetWidth, pinBottom - root.offsetHeight, { keepFlip: true });
+    saved.left = root.offsetLeft;
+    saved.top = root.offsetTop;
+  }
+
   function persist() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
@@ -550,8 +566,7 @@ export function mountChestnutPet(options = {}) {
       <button type="button" data-action="save">保存台词</button>
     `;
     box.querySelector('[data-field="scale"]').addEventListener("input", (event) => {
-      state.scale = Number(event.target.value);
-      root.style.setProperty("--pet-scale", String(state.scale));
+      applyScale(Number(event.target.value));
       persist();
       if (box.classList.contains("is-open")) positionMenu();
     });
@@ -632,18 +647,21 @@ function loadState() {
   }
 }
 
-function place(root, left, top) {
+function place(root, left, top, opts = {}) {
   const host = root.parentElement || document.body;
   const width = host === document.body ? window.innerWidth : host.getBoundingClientRect().width;
   const height = host === document.body ? window.innerHeight : host.getBoundingClientRect().height;
-  const maxLeft = Math.max(0, width - root.offsetWidth);
-  const maxTop = Math.max(0, height - root.offsetHeight);
+  const boxW = root.offsetWidth;
+  const boxH = root.offsetHeight;
+  const maxLeft = Math.max(0, width - boxW);
+  const maxTop = Math.max(0, height - boxH);
   const x = Math.min(maxLeft, Math.max(0, left));
-  root.style.left = `${x}px`;
-  root.style.top = `${Math.min(maxTop, Math.max(0, top))}px`;
-  root.style.right = "auto";
-  root.style.bottom = "auto";
-  root.classList.toggle("is-left", x < width / 2);
+  const y = Math.min(maxTop, Math.max(0, top));
+  root.style.left = "auto";
+  root.style.top = "auto";
+  root.style.right = `${Math.round(width - x - boxW)}px`;
+  root.style.bottom = `${Math.round(height - y - boxH)}px`;
+  if (!opts.keepFlip) root.classList.toggle("is-left", x < width / 2);
 }
 
 function el(tag, className) {
