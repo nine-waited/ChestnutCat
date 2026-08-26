@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chestnut Cat — 板栗猫娘</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <link rel="stylesheet" href="./widget.css?v=20260826c" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #2a1c14;
+        color: #f3e0c0;
+        font-family: "Segoe UI", "PingFang SC", sans-serif;
+      }
+      main {
+        padding: 24px 28px;
+        max-width: 720px;
+      }
+      code {
+        background: #3d2818;
+        padding: 0 4px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>板栗猫娘</h1>
+      <p>
+        右下角是板栗。交互抄自
+        <a href="https://github.com/louke6572/dsh-whale-widget-plus" style="color: #e2b07a"
+          >dsh-whale-widget-plus</a
+        >
+        ：点击说话，连点生气，悬停害羞，久不理会会失落，按住揉头。
+      </p>
+      <p>不要双击打开本页。在仓库根目录运行 <code>python -m http.server 4173</code>，然后打开本页。</p>
+    </main>
+    <script type="module">
+      import { mountChestnutPet } from "./widget.js?v=20260826c";
+      mountChestnutPet({ assetBase: "../assets", host: document.body });
+    </script>
+  </body>
+</html>

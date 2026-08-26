@@ -1,0 +1,10 @@
+{
+  "name": "chestnut-cat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web desktop pet of Chestnut as a ginger tabby cat-girl",
+  "scripts": {
+    "preview": "python -m http.server 4173",
+    "chroma": "python scripts/chroma_key.py"
+  }
+}
