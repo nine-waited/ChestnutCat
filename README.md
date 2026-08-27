@@ -2,6 +2,16 @@
 
 右下角的板栗猫娘桌宠。形象来自家猫板栗的照片，交互参考 [dsh-whale-widget-plus](https://github.com/louke6572/dsh-whale-widget-plus)（MIT）：点、连点、悬停、失落、揉头、台词和菜单。
 
+## 插件包
+
+打一个给 Chestnut Editor 导入的 zip（资源走 `getResourceUrl`，导入后解压到编辑器安装目录的 `plugins/`，不是笔记库）：
+
+```bash
+python scripts/pack-plugin.py
+```
+
+生成 `dist/chestnut-cat-0.1.0.zip`。在编辑器设置 → 插件里拖入该 zip。
+
 ## 预览
 
 不要直接双击 HTML。在仓库根目录：
@@ -22,7 +32,9 @@ python -m http.server 4173
 
 ## 表情贴图
 
-`assets/expr/` 对齐鲸鱼挂件第一版：
+默认贴图在 `assets/expr/`（小鲸鱼脸部描改：半垂眼、慵懒）。上一版更精致的猫娘在 `assets/expr-moe/`，保留不删。
+
+表情对齐鲸鱼挂件第一版：
 
 idle、angry、shy、disappointed、exhausted、stroking、close_eyes、half_closed_eyes、ok、sad、quiet、cheer、fatfish、mock、what、scared、greet、thumbsup
 

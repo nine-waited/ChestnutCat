@@ -3,21 +3,26 @@ let pet;
 let unsubStats = () => {};
 let cssLink;
 
-function publicBase() {
-  return new URL("chestnut-cat/", document.baseURI).href.replace(/\/$/, "");
-}
-
 export async function onLoad(api) {
   cssLink = document.createElement("link");
   cssLink.rel = "stylesheet";
-  cssLink.href = publicBase() + "/widget.css?v=20260827d";
+  cssLink.href = await api.getResourceUrl("widget.css");
   cssLink.dataset.chestnutCat = "css";
   document.head.appendChild(cssLink);
 
-  const mod = await import(/* @vite-ignore */ publicBase() + "/widget.js?v=20260827d");
+  const widgetHref = await api.getResourceUrl("widget.js");
+  const mod = await import(/* @vite-ignore */ widgetHref);
+  const assetMap = { "widget.js": widgetHref, "widget.css": cssLink.href };
+  const files = mod.PET_ASSET_FILES || [];
+  await Promise.all(
+    files.map(async (rel) => {
+      assetMap[rel] = await api.getResourceUrl(rel);
+    }),
+  );
+
   pet = mod.mountChestnutPet({
     host: document.body,
-    assetBase: publicBase(),
+    assetMap,
     stats: api.stats.getSnapshot(),
   });
   unsubStats = api.events.on("writing-stats", (data) => {

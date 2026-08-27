@@ -1,5 +1,5 @@
 const STORAGE_KEY = "chestnut-pet";
-const ASSET_VER = "20260827d";
+const ASSET_VER = "20260827e";
 const BUBBLE_STYLE = {
   A: "chestnut-pet-label",
   B: "chestnut-pet-amount",
@@ -43,6 +43,12 @@ const EXPR = {
 
 const CUTE_POOL = ["ok", "sad", "quiet", "cheer", "fatfish", "mock", "what", "scared", "greet", "thumbsup"];
 
+export const PET_ASSET_FILES = [
+  "Ya1.mp3",
+  "Ya2.mp3",
+  ...Object.values(EXPR).map((file) => `expr/${file}`),
+];
+
 const DEFAULT_LINES = [
   "板栗来啦，今天也要摸摸头。",
   "罐头呢？本猫娘饿了。",
@@ -71,6 +77,7 @@ function singleCenter(style, text, color, wrap) {
 
 export function mountChestnutPet(options = {}) {
   const assetBase = (options.assetBase || "../assets").replace(/\/$/, "");
+  const assetMap = options.assetMap && typeof options.assetMap === "object" ? options.assetMap : null;
   const host = options.host || document.body;
   const saved = loadState();
   let currentStats = options.stats || null;
@@ -209,8 +216,14 @@ export function mountChestnutPet(options = {}) {
     menu.style.top = `${Math.round(top)}px`;
   }
 
+  function assetPath(rel) {
+    const key = String(rel).split("?")[0];
+    if (assetMap && assetMap[key]) return assetMap[key];
+    return `${assetBase}/${key}`;
+  }
+
   function exprUrl(name) {
-    return `${assetBase}/expr/${EXPR[name] || EXPR.idle}?v=${ASSET_VER}`;
+    return assetPath(`expr/${EXPR[name] || EXPR.idle}`);
   }
 
   function preload(name) {
@@ -506,8 +519,8 @@ export function mountChestnutPet(options = {}) {
 
   function setupAudio() {
     try {
-      pressAudio = new Audio(`${assetBase}/Ya1.mp3?v=${ASSET_VER}`);
-      releaseAudio = new Audio(`${assetBase}/Ya2.mp3?v=${ASSET_VER}`);
+      pressAudio = new Audio(assetPath("Ya1.mp3"));
+      releaseAudio = new Audio(assetPath("Ya2.mp3"));
       pressAudio.preload = "auto";
       releaseAudio.preload = "auto";
     } catch {
