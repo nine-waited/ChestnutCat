@@ -2,6 +2,8 @@
 
 右下角的板栗猫娘桌宠。形象来自家猫板栗的照片，交互参考 [dsh-whale-widget-plus](https://github.com/louke6572/dsh-whale-widget-plus)（MIT）：点、连点情绪、揉头、台词和菜单。
 
+![Chestnut Cat in Chestnut Editor](docs/editor-preview.png)
+
 ## 插件包
 
 打一个给 Chestnut Editor 导入的 zip（资源走 `getResourceUrl`，导入后解压到编辑器安装目录的 `plugins/`，不是笔记库）：
