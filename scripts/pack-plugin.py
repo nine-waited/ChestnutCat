@@ -26,7 +26,10 @@ def main() -> None:
         (ROOT / "assets" / "Ya2.mp3", "Ya2.mp3"),
     ]
     expr = ROOT / "assets" / "expr"
-    files.extend((png, f"expr/{png.name}") for png in sorted(expr.glob("*.png")))
+    pngs = sorted(expr.glob("*.png"))
+    if not pngs:
+        raise SystemExit(f"No PNGs in {expr}")
+    files.extend((png, f"expr/{png.name}") for png in pngs)
 
     missing = [str(src) for src, _ in files if not src.is_file()]
     if missing:
@@ -36,7 +39,14 @@ def main() -> None:
         for src, dest in files:
             zf.write(src, dest)
 
+    names = zipfile.ZipFile(out_path).namelist()
+    leaked = [n for n in names if n.startswith(("expr-v1/", "expr-moe/", "refs/"))]
+    if leaked:
+        out_path.unlink(missing_ok=True)
+        raise SystemExit("Zip leaked archive/reference files:\n" + "\n".join(leaked))
+
     print(f"Wrote {out_path} ({out_path.stat().st_size} bytes, {len(files)} files)")
+    print(f"Packed {len(pngs)} expr PNGs; skipped assets/expr-v1 (archive only)")
 
 
 if __name__ == "__main__":

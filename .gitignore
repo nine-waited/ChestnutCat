@@ -1,5 +1,6 @@
 tmp/
 dist/
+hatch-run/
 __pycache__/
 .venv/
 venv/

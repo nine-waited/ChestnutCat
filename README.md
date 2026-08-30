@@ -10,7 +10,7 @@
 python scripts/pack-plugin.py
 ```
 
-生成 `dist/chestnut-cat-0.1.0.zip`。在编辑器设置 → 插件里拖入该 zip。
+生成 `dist/chestnut-cat-1.0.0.zip`。在编辑器设置 → 插件里拖入该 zip。
 
 ## 预览
 
