@@ -1,5 +1,5 @@
 const STORAGE_KEY = "chestnut-pet";
-const ASSET_VER = "20260827e";
+const ASSET_VER = "20260829a";
 const BUBBLE_STYLE = {
   A: "chestnut-pet-label",
   B: "chestnut-pet-amount",
@@ -12,13 +12,15 @@ const BUBBLE_SVG =
   '<ellipse class="chestnut-b1" cx="352" cy="561" rx="37.5" ry="26" fill="#fff7ea" stroke="#4a2a16" stroke-width="18"/>' +
   '<ellipse class="chestnut-b2" cx="442" cy="646" rx="24.5" ry="18" fill="#fff7ea" stroke="#4a2a16" stroke-width="18"/>' +
   "</svg>";
-const CLICKS_TO_ANGRY = 5;
-const ANGRY_MS = 3000;
+const CLICKS_TO_BURST = 5;
+const CLICK_WINDOW_MS = 1200;
+const BURST_MS = 5000;
 const SHY_MS = 8000;
-const LONELY_MS = 120000;
 const BUBBLE_MS = 5000;
-const CUTE_MIN_MS = 25000;
-const CUTE_VAR_MS = 35000;
+const BLINK_GAPS = [2000, 4000];
+const POSE_MIN_MS = 10000;
+const POSE_VAR_MS = 10000;
+const POSE_HOLD_MS = 5000;
 
 const EXPR = {
   idle: "idle.png",
@@ -41,7 +43,39 @@ const EXPR = {
   thumbsup: "thumbsup.png",
 };
 
-const CUTE_POOL = ["ok", "sad", "quiet", "cheer", "fatfish", "mock", "what", "scared", "greet", "thumbsup"];
+const EMOTION_POOL = [
+  "angry",
+  "shy",
+  "disappointed",
+  "exhausted",
+  "ok",
+  "sad",
+  "quiet",
+  "cheer",
+  "fatfish",
+  "mock",
+  "what",
+  "scared",
+  "greet",
+  "thumbsup",
+];
+
+const EMOTION_LINES = {
+  angry: ["点这么急，本猫要炸毛了。", "再点，尾巴抽你。", "哼，本座还没睡醒。"],
+  shy: ["看够了吗……耳朵有点热。", "别盯着本座的脸。", "被点害羞了，本猫先躲一下。"],
+  disappointed: ["点完就走？本猫还没躺平。", "哦，原来你这么忙。", "本座有点无聊了。"],
+  exhausted: ["点累了，本座先躺平。", "别催，本猫在充电。", "Zzz……再吵就咬你。"],
+  ok: ["行吧，本猫勉强答应。", "嗯，过关了。", "好啦好啦，本座知道了。"],
+  sad: ["罐头呢，本座有点委屈。", "你是不是把本猫忘了。", "今天也可以摸摸头的……"],
+  quiet: ["嘘，本座在偷懒，别出声。", "安静点，耳朵要休息。", "本猫现在不想说话。"],
+  cheer: ["加油……本猫在旁边躺着给你打气。", "写完请投喂。", "本座批准你再写一句。"],
+  fatfish: ["别催，本猫有自己的节奏。", "急什么，罐头又不会跑。", "本座今天的配额用完了。"],
+  mock: ["点得挺勤，字写了吗。", "哼，被本猫看穿了。", "就这？本座还可以更懒。"],
+  what: ["嗯？你点本座干什么。", "发生什么事了，本猫没睡醒。", "哈？再点一遍试试。"],
+  scared: ["啊——点太快了！", "吓到本猫了，爪子都收不回来。", "轻一点，本座心脏小。"],
+  greet: ["嗨……本猫还在呢。", "又见面了，摸摸也行。", "懒洋洋地跟你打个招呼。"],
+  thumbsup: ["不错嘛，本座给你点个爪。", "过得去，赏你一记拇指。", "嗯，本猫认可你一下。"],
+};
 
 export const PET_ASSET_FILES = [
   "Ya1.mp3",
@@ -122,10 +156,14 @@ export function mountChestnutPet(options = {}) {
   let clickLog = [];
   let moodTimer = 0;
   let hoverTimer = 0;
-  let idleTimer = 0;
   let blinkTimer = 0;
-  let cuteTimer = 0;
+  let blinkStepTimer = 0;
   let bubbleTimer = 0;
+  let burstExpr = "";
+  let lastBurstExpr = "";
+  let poseExpr = "";
+  let poseTimer = 0;
+  let cuteTimer = 0;
   let bubbleSwapTimer = 0;
   let bubbleShown = false;
   let bubbleRandomActive = false;
@@ -136,8 +174,7 @@ export function mountChestnutPet(options = {}) {
   Object.keys(EXPR).forEach((name) => preload(name));
   setExpr("idle");
   scheduleBlink();
-  scheduleCute();
-  resetIdle();
+  schedulePose();
   setupAudio();
 
   body.addEventListener("pointerdown", onDown);
@@ -262,10 +299,10 @@ export function mountChestnutPet(options = {}) {
       setExpr(pressing ? "stroking" : saved.manualExpr);
       return;
     }
-    if (mood === "angry") return setExpr("angry");
-    if (mood === "disappointed") return setExpr("disappointed");
+    if (mood === "burst" && burstExpr) return setExpr(burstExpr);
     if (mood === "shy") return setExpr("shy");
     if (pressing) return setExpr("stroking");
+    if (poseExpr) return setExpr(poseExpr);
     setExpr("idle");
   }
 
@@ -281,6 +318,8 @@ export function mountChestnutPet(options = {}) {
     root.classList.add("is-pressing", "is-dragging");
     applyIcon();
     play(pressAudio);
+    cancelBlink();
+    clearPose();
     body.setPointerCapture?.(event.pointerId);
     event.preventDefault();
   }
@@ -306,12 +345,17 @@ export function mountChestnutPet(options = {}) {
     applyIcon();
     play(releaseAudio);
     persist();
-    onActivity();
+    scheduleBlink();
+    schedulePose();
   }
 
   function onClick() {
     if (moved) return;
-    registerClick();
+    if (registerClick()) {
+      enterBurstEmotion();
+      return;
+    }
+    if (mood === "burst") return;
     showBubble();
   }
 
@@ -334,8 +378,11 @@ export function mountChestnutPet(options = {}) {
       if (saved.manualExpr) return;
       mood = "shy";
       cancelBlink();
+      clearPose();
       setExpr("shy");
-      moodTimer = window.setTimeout(exitMood, ANGRY_MS);
+      const line = emotionLine("shy");
+      if (line) say(line);
+      moodTimer = window.setTimeout(exitMood, BURST_MS);
     }, SHY_MS);
   }
 
@@ -345,80 +392,104 @@ export function mountChestnutPet(options = {}) {
 
   function registerClick() {
     const now = Date.now();
-    clickLog = clickLog.filter((t) => now - t < 1200);
+    clickLog = clickLog.filter((t) => now - t < CLICK_WINDOW_MS);
     clickLog.push(now);
-    if (clickLog.length >= CLICKS_TO_ANGRY) enterAngry();
+    return clickLog.length >= CLICKS_TO_BURST;
   }
 
-  function enterAngry() {
+  function enterBurstEmotion() {
     if (saved.manualExpr) return;
-    mood = "angry";
+    const pool = EMOTION_POOL.filter((name) => name !== lastBurstExpr);
+    const pick = pickOne(pool.length ? pool : EMOTION_POOL);
+    lastBurstExpr = pick;
+    burstExpr = pick;
+    mood = "burst";
     clickLog = [];
     cancelBlink();
-    setExpr("angry");
+    clearPose();
+    setExpr(pick);
+    const line = emotionLine(pick);
+    say(line || pickOne(DEFAULT_LINES) || "喵。");
     window.clearTimeout(moodTimer);
-    moodTimer = window.setTimeout(exitMood, ANGRY_MS);
-  }
-
-  function enterLonely() {
-    if (saved.manualExpr || mood === "disappointed") return;
-    mood = "disappointed";
-    cancelBlink();
-    setExpr("disappointed");
+    moodTimer = window.setTimeout(exitMood, BURST_MS);
   }
 
   function exitMood() {
     mood = "normal";
+    burstExpr = "";
     applyIcon();
     scheduleBlink();
-    resetIdle();
+    schedulePose();
   }
 
-  function onActivity() {
-    if (mood === "disappointed") exitMood();
-    else resetIdle();
+  function emotionLine(name) {
+    const lines = EMOTION_LINES[name];
+    if (!lines || !lines.length) return "";
+    return pickOne(lines);
   }
 
-  function resetIdle() {
-    window.clearTimeout(idleTimer);
-    idleTimer = window.setTimeout(enterLonely, LONELY_MS);
+  function canIdleAnimate() {
+    return mood === "normal" && !pressing && !saved.manualExpr;
+  }
+
+  function canBlink() {
+    return canIdleAnimate() && !poseExpr;
   }
 
   function scheduleBlink() {
     cancelBlink();
-    if (mood !== "normal" || saved.manualExpr) return;
+    if (!canBlink()) return;
     blinkTimer = window.setTimeout(() => {
-      if (mood !== "normal" || pressing || saved.manualExpr) {
+      if (!canBlink()) {
         scheduleBlink();
         return;
       }
-      setExpr("half_closed_eyes");
-      window.setTimeout(() => {
-        if (mood === "normal" && !pressing) setExpr("close_eyes");
-      }, 130);
-      window.setTimeout(() => {
-        if (mood === "normal" && !pressing) applyIcon();
-      }, 280);
-      scheduleBlink();
-    }, 3500 + Math.random() * 4500);
+      setExpr("close_eyes");
+      blinkStepTimer = window.setTimeout(() => {
+        if (!canBlink()) return;
+        applyIcon();
+        scheduleBlink();
+      }, 180);
+    }, pickOne(BLINK_GAPS));
   }
 
   function cancelBlink() {
     window.clearTimeout(blinkTimer);
+    window.clearTimeout(blinkStepTimer);
+    blinkTimer = 0;
+    blinkStepTimer = 0;
   }
 
-  function scheduleCute() {
+  function clearPose() {
+    window.clearTimeout(poseTimer);
+    poseTimer = 0;
+    poseExpr = "";
+  }
+
+  function schedulePose() {
     window.clearTimeout(cuteTimer);
+    if (!canIdleAnimate()) return;
     cuteTimer = window.setTimeout(() => {
-      if (mood === "normal" && !pressing && !saved.manualExpr) {
-        const pick = CUTE_POOL[Math.floor(Math.random() * CUTE_POOL.length)];
-        setExpr(pick);
-        window.setTimeout(() => {
-          if (mood === "normal" && !pressing) applyIcon();
-        }, 4000);
+      if (!canIdleAnimate() || poseExpr) {
+        schedulePose();
+        return;
       }
-      scheduleCute();
-    }, CUTE_MIN_MS + Math.random() * CUTE_VAR_MS);
+      const pool = EMOTION_POOL.filter((name) => name !== lastBurstExpr);
+      const pick = pickOne(pool.length ? pool : EMOTION_POOL);
+      lastBurstExpr = pick;
+      poseExpr = pick;
+      cancelBlink();
+      setExpr(pick);
+      const line = emotionLine(pick);
+      if (line) say(line);
+      poseTimer = window.setTimeout(() => {
+        poseExpr = "";
+        poseTimer = 0;
+        if (canIdleAnimate()) applyIcon();
+        scheduleBlink();
+        schedulePose();
+      }, POSE_HOLD_MS);
+    }, POSE_MIN_MS + Math.random() * POSE_VAR_MS);
   }
 
   function defaultBubbleLines() {
@@ -588,6 +659,7 @@ export function mountChestnutPet(options = {}) {
       persist();
       applyIcon();
       scheduleBlink();
+      schedulePose();
     });
     box.querySelector('[data-field="sound"]').addEventListener("change", (event) => {
       state.sound = event.target.checked;
@@ -635,8 +707,9 @@ export function mountChestnutPet(options = {}) {
     destroy() {
       window.clearTimeout(moodTimer);
       window.clearTimeout(hoverTimer);
-      window.clearTimeout(idleTimer);
       window.clearTimeout(blinkTimer);
+      window.clearTimeout(blinkStepTimer);
+      window.clearTimeout(poseTimer);
       window.clearTimeout(cuteTimer);
       window.clearTimeout(bubbleTimer);
       window.clearTimeout(bubbleSwapTimer);
